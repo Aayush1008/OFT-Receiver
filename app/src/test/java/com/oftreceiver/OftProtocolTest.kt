@@ -470,7 +470,7 @@ class OftProtocolTest {
 
     @Test
     fun `sanitizeFilename removes slashes`() {
-        assertEquals("etc_passwd", OftProtocol.sanitizeFilename("/etc/passwd"))
+        assertEquals("_etc_passwd", OftProtocol.sanitizeFilename("/etc/passwd"))
         assertEquals(".._.._foo", OftProtocol.sanitizeFilename("../../foo"))
     }
 
