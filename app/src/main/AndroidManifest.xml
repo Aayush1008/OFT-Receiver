@@ -9,12 +9,13 @@
     <uses-feature android:name="android.hardware.camera" android:required="true" />
 
     <application
+        android:name=".OftApp"
         android:allowBackup="true"
         android:icon="@mipmap/ic_launcher"
         android:label="@string/app_name"
         android:supportsRtl="true"
         android:theme="@style/Theme.OFTReceiver"
-        tools:targetApi="31">
+        tools:targetApi="35">
 
         <!-- Ensure ML Kit bundled model is included (no Google Play Services needed) -->
         <meta-data

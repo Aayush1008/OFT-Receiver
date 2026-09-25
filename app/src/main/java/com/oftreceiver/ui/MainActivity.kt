@@ -1,242 +1,81 @@
 package com.oftreceiver.ui
 
-import android.Manifest
-import android.content.Intent
-import android.content.pm.PackageManager
-import android.net.Uri
 import android.os.Bundle
-import android.view.View
-import android.widget.Toast
-import androidx.activity.result.contract.ActivityResultContracts
 import androidx.activity.viewModels
 import androidx.appcompat.app.AppCompatActivity
-import androidx.camera.core.CameraSelector
-import androidx.camera.core.ImageAnalysis
-import androidx.camera.core.Preview
-import androidx.camera.lifecycle.ProcessCameraProvider
-import androidx.core.content.ContextCompat
+import androidx.core.view.ViewCompat
+import androidx.core.view.WindowCompat
+import androidx.core.view.WindowInsetsCompat
+import androidx.core.view.updatePadding
+import androidx.fragment.app.Fragment
 import com.oftreceiver.R
 import com.oftreceiver.databinding.ActivityMainBinding
 import com.oftreceiver.viewmodel.MainViewModel
-import java.util.concurrent.ExecutorService
-import java.util.concurrent.Executors
 
 class MainActivity : AppCompatActivity() {
 
     private lateinit var binding: ActivityMainBinding
     private val viewModel: MainViewModel by viewModels()
 
-    private var cameraProvider: ProcessCameraProvider? = null
-    private var cameraExecutor: ExecutorService? = null
-    private var hasTorch = false
-
-    // ── Permission request ─────────────────────────────────────────────
-
-    private val cameraPermissionLauncher = registerForActivityResult(
-        ActivityResultContracts.RequestPermission()
-    ) { granted ->
-        if (granted) {
-            startCamera()
-        } else {
-            binding.statusText.text = "Camera permission denied.\nPlease grant camera access in Settings to scan QR codes."
-            binding.btnReset.visibility = View.VISIBLE
-        }
-    }
-
-    // ── SAF save document ──────────────────────────────────────────────
-
-    private val saveDocumentLauncher = registerForActivityResult(
-        ActivityResultContracts.CreateDocument("application/octet-stream")
-    ) { uri: Uri? ->
-        if (uri != null) {
-            saveFileToUri(uri)
-        } else {
-            // User cancelled — remain in VERIFIED state so they can retry
-            Toast.makeText(this, "Save cancelled — file is still in memory", Toast.LENGTH_SHORT).show()
-        }
-    }
-
-    // ── Lifecycle ──────────────────────────────────────────────────────
+    private val scanFragment = ScanFragment()
+    private val historyFragment = HistoryFragment()
+    private var activeFragment: Fragment? = null
 
     override fun onCreate(savedInstanceState: Bundle?) {
+        // Enable edge-to-edge before setContentView
+        WindowCompat.setDecorFitsSystemWindows(window, false)
         super.onCreate(savedInstanceState)
+
         binding = ActivityMainBinding.inflate(layoutInflater)
         setContentView(binding.root)
 
-        setupObservers()
-        setupButtons()
+        // Apply navigation bar insets to bottom nav
+        ViewCompat.setOnApplyWindowInsetsListener(binding.bottomNav) { v, windowInsets ->
+            val insets = windowInsets.getInsets(WindowInsetsCompat.Type.navigationBars())
+            v.updatePadding(bottom = insets.bottom)
+            windowInsets
+        }
 
-        if (ContextCompat.checkSelfPermission(this, Manifest.permission.CAMERA)
-            == PackageManager.PERMISSION_GRANTED
-        ) {
-            startCamera()
+        // Set up fragments
+        if (savedInstanceState == null) {
+            supportFragmentManager.beginTransaction()
+                .add(R.id.fragmentContainer, historyFragment, "history")
+                .hide(historyFragment)
+                .add(R.id.fragmentContainer, scanFragment, "scan")
+                .commit()
+            activeFragment = scanFragment
         } else {
-            cameraPermissionLauncher.launch(Manifest.permission.CAMERA)
-        }
-    }
-
-    override fun onDestroy() {
-        super.onDestroy()
-        cameraExecutor?.shutdown()
-    }
-
-    // ── Camera setup ───────────────────────────────────────────────────
-
-    private fun startCamera() {
-        cameraExecutor = Executors.newSingleThreadExecutor()
-
-        val cameraProviderFuture = ProcessCameraProvider.getInstance(this)
-        cameraProviderFuture.addListener({
-            val provider = cameraProviderFuture.get()
-            cameraProvider = provider
-
-            val preview = Preview.Builder().build().also {
-                it.setSurfaceProvider(binding.previewView.surfaceProvider)
+            // Restore fragments on config change
+            val scan = supportFragmentManager.findFragmentByTag("scan")
+            val history = supportFragmentManager.findFragmentByTag("history")
+            if (scan != null && history != null) {
+                activeFragment = if (history.isVisible) history else scan
             }
+        }
 
-            val analysis = ImageAnalysis.Builder()
-                .setBackpressureStrategy(ImageAnalysis.STRATEGY_KEEP_ONLY_LATEST)
-                .build()
-                .also { imageAnalysis ->
-                    imageAnalysis.setAnalyzer(cameraExecutor!!, QrAnalyzer { raw ->
-                        viewModel.onQrPayload(raw)
-                    })
+        binding.bottomNav.setOnItemSelectedListener { item ->
+            when (item.itemId) {
+                R.id.nav_scan -> {
+                    switchFragment(scanFragment)
+                    true
                 }
-
-            val cameraSelector = CameraSelector.DEFAULT_BACK_CAMERA
-
-            try {
-                provider.unbindAll()
-                val camera = provider.bindToLifecycle(this, cameraSelector, preview, analysis)
-
-                // Check torch availability
-                hasTorch = camera.cameraInfo.hasFlashUnit()
-                runOnUiThread {
-                    binding.btnTorch.visibility = if (hasTorch) View.VISIBLE else View.GONE
+                R.id.nav_history -> {
+                    switchFragment(historyFragment)
+                    true
                 }
-
-                // Observe torch state
-                viewModel.torchEnabled.observe(this) { enabled ->
-                    camera.cameraControl.enableTorch(enabled)
-                    binding.btnTorch.text = if (enabled) "🔦 Torch OFF" else "🔦 Torch ON"
-                }
-
-            } catch (e: Exception) {
-                binding.statusText.text = "Camera initialization failed: ${e.message}"
-            }
-        }, ContextCompat.getMainExecutor(this))
-    }
-
-    // ── UI wiring ──────────────────────────────────────────────────────
-
-    private fun setupObservers() {
-        viewModel.state.observe(this) { state ->
-            // Status text
-            binding.statusText.text = state.statusMessage
-
-            // Session info
-            if (state.sessionId.isNotEmpty()) {
-                binding.sessionInfo.visibility = View.VISIBLE
-                binding.sessionInfo.text = "File: ${state.filename}\nSession: ${state.sessionId}"
-            } else {
-                binding.sessionInfo.visibility = View.GONE
-            }
-
-            // Progress
-            if (state.totalChunks > 0) {
-                binding.progressGroup.visibility = View.VISIBLE
-                binding.progressBar.max = state.totalChunks
-                binding.progressBar.progress = state.receivedChunks
-                binding.progressText.text = "${state.receivedChunks} / ${state.totalChunks} chunks  •  " +
-                        "${formatBytes(state.bytesReceived)} / ${formatBytes(state.totalBytes)}"
-            } else {
-                binding.progressGroup.visibility = View.GONE
-            }
-
-            // Last rejection
-            if (state.lastRejection != null) {
-                binding.rejectionText.visibility = View.VISIBLE
-                binding.rejectionText.text = "⚠ ${state.lastRejection}"
-            } else {
-                binding.rejectionText.visibility = View.GONE
-            }
-
-            // SHA-256 display
-            if (state.sha256 != null) {
-                binding.shaText.visibility = View.VISIBLE
-                binding.shaText.text = "SHA-256:\n${state.sha256}"
-            } else {
-                binding.shaText.visibility = View.GONE
-            }
-
-            // Save button
-            binding.btnSave.visibility = when (state.status) {
-                MainViewModel.Status.VERIFIED -> View.VISIBLE
-                else -> View.GONE
-            }
-
-            // Scan overlay tint
-            binding.scanOverlay.alpha = when (state.status) {
-                MainViewModel.Status.VERIFIED, MainViewModel.Status.SAVED -> 0.1f
-                else -> 0.3f
-            }
-
-            // Saved confirmation
-            if (state.status == MainViewModel.Status.SAVED) {
-                binding.savedConfirmation.visibility = View.VISIBLE
-                binding.savedConfirmation.text = "✓ File saved successfully"
-            } else {
-                binding.savedConfirmation.visibility = View.GONE
+                else -> false
             }
         }
     }
 
-    private fun setupButtons() {
-        binding.btnReset.setOnClickListener {
-            viewModel.reset()
-            // Re-check camera permission
-            if (ContextCompat.checkSelfPermission(this, Manifest.permission.CAMERA)
-                != PackageManager.PERMISSION_GRANTED
-            ) {
-                cameraPermissionLauncher.launch(Manifest.permission.CAMERA)
-            }
-        }
+    private fun switchFragment(target: Fragment) {
+        if (target == activeFragment) return
+        val current = activeFragment ?: return
 
-        binding.btnTorch.setOnClickListener {
-            viewModel.toggleTorch()
-        }
-
-        binding.btnSave.setOnClickListener {
-            saveDocumentLauncher.launch(viewModel.getSuggestedFilename())
-        }
-    }
-
-    // ── File saving ────────────────────────────────────────────────────
-
-    private fun saveFileToUri(uri: Uri) {
-        Thread {
-            val outputStream = contentResolver.openOutputStream(uri)
-            if (outputStream == null) {
-                runOnUiThread {
-                    Toast.makeText(this, "Could not open output stream", Toast.LENGTH_LONG).show()
-                }
-                return@Thread
-            }
-
-            val success = viewModel.saveToStream(outputStream)
-            if (success) {
-                viewModel.onSaveComplete(uri)
-            }
-        }.start()
-    }
-
-    // ── Helpers ─────────────────────────────────────────────────────────
-
-    private fun formatBytes(bytes: Long): String {
-        return when {
-            bytes < 1024 -> "$bytes B"
-            bytes < 1024 * 1024 -> "%.1f KB".format(bytes / 1024.0)
-            else -> "%.2f MB".format(bytes / (1024.0 * 1024.0))
-        }
+        supportFragmentManager.beginTransaction()
+            .hide(current)
+            .show(target)
+            .commit()
+        activeFragment = target
     }
 }

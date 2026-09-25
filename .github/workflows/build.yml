@@ -45,8 +45,8 @@ jobs:
           yes | "$HOME/android-sdk/cmdline-tools/latest/bin/sdkmanager" --licenses || true
           "$HOME/android-sdk/cmdline-tools/latest/bin/sdkmanager" \
             "platform-tools" \
-            "platforms;android-34" \
-            "build-tools;34.0.0"
+            "platforms;android-35" \
+            "build-tools;35.0.0"
 
       - name: Run unit tests
         run: gradle test
@@ -63,12 +63,19 @@ jobs:
       - name: Create Release with APK
         uses: softprops/action-gh-release@v2
         with:
-          tag_name: v1.0-build.${{ github.run_number }}
-          name: OFT Receiver v1.0 (Build ${{ github.run_number }})
+          tag_name: v2.0-build.${{ github.run_number }}
+          name: OFT Receiver v2.0 (Build ${{ github.run_number }})
           body: |
-            ## OFT Receiver - Optical File Transfer
+            ## OFT Receiver v2.0 - Material You Redesign
 
             Download `app-debug.apk` below and install it on your Android phone.
+
+            **What's new:**
+            - Material 3 / Material You with dynamic colors
+            - Edge-to-edge display with proper insets
+            - Transfer history with file browser
+            - Modern UI with bottom navigation
+            - Optimized for Pixel 8 / Android 15
 
             **How to install:**
             1. Download `app-debug.apk` from the Assets section below

@@ -1,18 +1,23 @@
 package com.oftreceiver.viewmodel
 
+import android.app.Application
 import android.net.Uri
+import androidx.lifecycle.AndroidViewModel
 import androidx.lifecycle.LiveData
 import androidx.lifecycle.MutableLiveData
-import androidx.lifecycle.ViewModel
+import androidx.lifecycle.viewModelScope
+import com.oftreceiver.data.AppDatabase
+import com.oftreceiver.data.TransferRecord
 import com.oftreceiver.protocol.OftProtocol
 import com.oftreceiver.protocol.TransferSession
+import kotlinx.coroutines.launch
 import java.io.OutputStream
 
 /**
  * ViewModel that survives rotation. Holds the transfer session state
  * and processes incoming QR frame payloads.
  */
-class MainViewModel : ViewModel() {
+class MainViewModel(application: Application) : AndroidViewModel(application) {
 
     // ── Observable state ───────────────────────────────────────────────
 
@@ -28,7 +33,7 @@ class MainViewModel : ViewModel() {
         val lastRejection: String? = null,
         val sha256: String? = null,
         val savedUri: Uri? = null,
-        val statusMessage: String = "Point camera at the QR code sequence"
+        val statusMessage: String = "Ready to scan"
     )
 
     enum class Status {
@@ -45,6 +50,7 @@ class MainViewModel : ViewModel() {
     val state: LiveData<TransferState> = _state
 
     private var session: TransferSession? = null
+    private var transferStartTime: Long = 0L
 
     // ── Torch state ────────────────────────────────────────────────────
 
@@ -57,22 +63,16 @@ class MainViewModel : ViewModel() {
 
     // ── QR processing ──────────────────────────────────────────────────
 
-    /**
-     * Called from the barcode analyzer on the camera thread.
-     * Must be synchronized to avoid concurrent modification.
-     */
     @Synchronized
     fun onQrPayload(raw: String) {
         val currentState = _state.value ?: return
 
-        // Don't process if we're already verified/saving/saved
         if (currentState.status in listOf(Status.VERIFIED, Status.SAVING, Status.SAVED)) return
 
         val result = OftProtocol.parseFrame(raw)
 
         when (result) {
             is OftProtocol.ParseResult.Ignored -> {
-                // Non-OFT1 QR — show brief status
                 postState(currentState.copy(
                     lastRejection = "Non-protocol QR code (ignored)"
                 ))
@@ -90,58 +90,54 @@ class MainViewModel : ViewModel() {
     private fun handleManifest(manifest: OftProtocol.ParseResult.Manifest, currentState: TransferState) {
         val existing = session
         if (existing != null && existing.manifest.sessionId == manifest.sessionId) {
-            // Same session manifest repeated — ignore
             return
         }
 
         if (existing != null && existing.manifest.sessionId != manifest.sessionId) {
-            // Different session — discard old and start new
             session = TransferSession(manifest)
+            transferStartTime = System.currentTimeMillis()
             postState(TransferState(
                 status = Status.RECEIVING,
                 filename = manifest.filename,
                 sessionId = manifest.sessionId,
                 totalChunks = manifest.totalChunks,
                 totalBytes = manifest.fileSize,
-                statusMessage = "New session started (previous discarded): ${manifest.filename}",
-                lastRejection = "Previous session ${existing.manifest.sessionId} discarded"
+                statusMessage = "Receiving ${manifest.filename}",
+                lastRejection = "Previous session discarded"
             ))
             return
         }
 
-        // No existing session — start fresh
         session = TransferSession(manifest)
+        transferStartTime = System.currentTimeMillis()
         postState(TransferState(
             status = Status.RECEIVING,
             filename = manifest.filename,
             sessionId = manifest.sessionId,
             totalChunks = manifest.totalChunks,
             totalBytes = manifest.fileSize,
-            statusMessage = "Receiving: ${manifest.filename}"
+            statusMessage = "Receiving ${manifest.filename}"
         ))
     }
 
     private fun handleDataFrame(frame: OftProtocol.ParseResult.DataFrame, currentState: TransferState) {
         val s = session ?: run {
-            // No manifest yet — ignore data frames
             postState(currentState.copy(
-                lastRejection = "Data frame ignored — no manifest received yet"
+                lastRejection = "No manifest received yet"
             ))
             return
         }
 
-        // Session ID must match
         if (frame.sessionId != s.manifest.sessionId) {
             postState(currentState.copy(
-                lastRejection = "Data frame session mismatch (ignored)"
+                lastRejection = "Session mismatch (ignored)"
             ))
             return
         }
 
-        // Index range check
         if (frame.chunkIndex < 0 || frame.chunkIndex >= s.manifest.totalChunks) {
             postState(currentState.copy(
-                lastRejection = "Chunk index ${frame.chunkIndex} out of range"
+                lastRejection = "Chunk ${frame.chunkIndex} out of range"
             ))
             return
         }
@@ -154,19 +150,18 @@ class MainViewModel : ViewModel() {
             bytesReceived = s.bytesReceived,
             progress = s.progress,
             lastRejection = s.lastRejection,
-            statusMessage = if (accepted) "Chunk ${frame.chunkIndex} received"
+            statusMessage = if (accepted) "Receiving ${currentState.filename}"
                            else currentState.statusMessage
         )
         postState(newState)
 
-        // Check for completion
         if (s.receivedCount == s.manifest.totalChunks) {
             postState(newState.copy(status = Status.VERIFYING, statusMessage = "Verifying SHA-256..."))
             val error = s.tryFinalize()
             if (error != null) {
                 postState(newState.copy(
                     status = Status.ERROR,
-                    statusMessage = "Verification failed: $error",
+                    statusMessage = "Verification failed",
                     lastRejection = error
                 ))
             } else {
@@ -176,7 +171,7 @@ class MainViewModel : ViewModel() {
                     progress = 1f,
                     receivedChunks = s.receivedCount,
                     bytesReceived = s.bytesReceived,
-                    statusMessage = "File verified! Ready to save."
+                    statusMessage = "File verified — ready to save"
                 ))
             }
         }
@@ -184,18 +179,13 @@ class MainViewModel : ViewModel() {
 
     // ── Save to SAF ────────────────────────────────────────────────────
 
-    /** The sanitized filename for ACTION_CREATE_DOCUMENT. */
     fun getSuggestedFilename(): String = session?.manifest?.filename ?: "received-file.bin"
 
-    /**
-     * Write the verified file to the given OutputStream.
-     * Call from a coroutine or background thread.
-     */
     fun saveToStream(outputStream: OutputStream): Boolean {
         val s = session ?: return false
         if (!s.isComplete) return false
 
-        postState(_state.value!!.copy(status = Status.SAVING, statusMessage = "Saving file..."))
+        postState(_state.value!!.copy(status = Status.SAVING, statusMessage = "Saving..."))
 
         return try {
             outputStream.use { out ->
@@ -208,7 +198,7 @@ class MainViewModel : ViewModel() {
         } catch (e: Exception) {
             postState(_state.value!!.copy(
                 status = Status.VERIFIED,
-                statusMessage = "Save failed: ${e.message}. Tap Save to retry."
+                statusMessage = "Save failed. Tap to retry."
             ))
             false
         }
@@ -216,10 +206,34 @@ class MainViewModel : ViewModel() {
 
     fun onSaveComplete(uri: Uri) {
         val current = _state.value ?: return
+        val s = session ?: return
+        val durationMs = System.currentTimeMillis() - transferStartTime
+
+        // Record in history database
+        viewModelScope.launch {
+            try {
+                val db = AppDatabase.getInstance(getApplication())
+                db.transferDao().insert(
+                    TransferRecord(
+                        filename = s.manifest.filename,
+                        fileSize = s.manifest.fileSize,
+                        sha256 = s.verifiedSha256 ?: "",
+                        savedUri = uri.toString(),
+                        timestamp = System.currentTimeMillis(),
+                        sessionId = s.manifest.sessionId,
+                        totalChunks = s.manifest.totalChunks,
+                        durationMs = durationMs
+                    )
+                )
+            } catch (_: Exception) {
+                // History save is best-effort
+            }
+        }
+
         postState(current.copy(
             status = Status.SAVED,
             savedUri = uri,
-            statusMessage = "File saved successfully!"
+            statusMessage = "File saved"
         ))
     }
 

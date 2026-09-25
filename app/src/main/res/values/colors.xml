@@ -2,4 +2,38 @@
 <resources>
     <color name="black">#FF000000</color>
     <color name="white">#FFFFFFFF</color>
+
+    <!-- Material 3 dark theme fallback palette (overridden by dynamic colors on Pixel 8) -->
+    <color name="md_primary">#FF8AB4F8</color>
+    <color name="md_on_primary">#FF062E6F</color>
+    <color name="md_primary_container">#FF0842A0</color>
+    <color name="md_on_primary_container">#FFD3E3FD</color>
+    <color name="md_secondary">#FFBDC7DC</color>
+    <color name="md_on_secondary">#FF273141</color>
+    <color name="md_secondary_container">#FF3D4758</color>
+    <color name="md_on_secondary_container">#FFD9E3F8</color>
+    <color name="md_tertiary">#FFDCBCE0</color>
+    <color name="md_surface">#FF111318</color>
+    <color name="md_on_surface">#FFE2E2E9</color>
+    <color name="md_surface_variant">#FF43474E</color>
+    <color name="md_on_surface_variant">#FFC3C6CF</color>
+    <color name="md_error">#FFFFB4AB</color>
+
+    <!-- Bottom nav -->
+    <color name="nav_bar_bg">#E6111318</color>
+
+    <!-- Scan overlay colors -->
+    <color name="scan_corner">#FF8AB4F8</color>
+    <color name="scan_corner_success">#FF81C995</color>
+    <color name="info_panel_bg">#E61B1D24</color>
+
+    <!-- Status colors -->
+    <color name="status_success">#FF81C995</color>
+    <color name="status_warning">#FFFFB74D</color>
+    <color name="status_info">#FF8AB4F8</color>
+    <color name="text_secondary">#99E2E2E9</color>
+
+    <!-- History card -->
+    <color name="card_bg">#FF1E2028</color>
+    <color name="divider">#1AE2E2E9</color>
 </resources>
