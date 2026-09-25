@@ -5,6 +5,9 @@ on:
     branches: [ main, master ]
   workflow_dispatch:  # allows manual trigger from GitHub UI
 
+permissions:
+  contents: write   # needed to create releases
+
 jobs:
   build:
     runs-on: ubuntu-latest
@@ -56,3 +59,20 @@ jobs:
         with:
           name: OFTReceiver-debug
           path: app/build/outputs/apk/debug/app-debug.apk
+
+      - name: Create Release with APK
+        uses: softprops/action-gh-release@v2
+        with:
+          tag_name: v1.0-build.${{ github.run_number }}
+          name: OFT Receiver v1.0 (Build ${{ github.run_number }})
+          body: |
+            ## OFT Receiver - Optical File Transfer
+
+            Download `app-debug.apk` below and install it on your Android phone.
+
+            **How to install:**
+            1. Download `app-debug.apk` from the Assets section below
+            2. Open the file on your phone
+            3. Allow installation from unknown sources if prompted
+            4. Install and open the app
+          files: app/build/outputs/apk/debug/app-debug.apk
