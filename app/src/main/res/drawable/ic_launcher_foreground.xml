@@ -1,0 +1,43 @@
+<?xml version="1.0" encoding="utf-8"?>
+<vector xmlns:android="http://schemas.android.com/apk/res/android"
+    android:width="108dp"
+    android:height="108dp"
+    android:viewportWidth="108"
+    android:viewportHeight="108">
+
+    <!-- Top-left finder pattern frame (concentric rounded squares) -->
+    <path
+        android:fillColor="#FFFFFF"
+        android:fillType="evenOdd"
+        android:pathData="M24,20L38,20A4,4,0,0,1,42,24L42,38A4,4,0,0,1,38,42L24,42A4,4,0,0,1,20,38L20,24A4,4,0,0,1,24,20Z M27,25L35,25A2,2,0,0,1,37,27L37,35A2,2,0,0,1,35,37L27,37A2,2,0,0,1,25,35L25,27A2,2,0,0,1,27,25Z"/>
+    <!-- Top-left finder center dot -->
+    <path
+        android:fillColor="#FFFFFF"
+        android:pathData="M29.5,28L32.5,28A1.5,1.5,0,0,1,34,29.5L34,32.5A1.5,1.5,0,0,1,32.5,34L29.5,34A1.5,1.5,0,0,1,28,32.5L28,29.5A1.5,1.5,0,0,1,29.5,28Z"/>
+
+    <!-- Top-right finder pattern frame -->
+    <path
+        android:fillColor="#FFFFFF"
+        android:fillType="evenOdd"
+        android:pathData="M70,20L84,20A4,4,0,0,1,88,24L88,38A4,4,0,0,1,84,42L70,42A4,4,0,0,1,66,38L66,24A4,4,0,0,1,70,20Z M73,25L81,25A2,2,0,0,1,83,27L83,35A2,2,0,0,1,81,37L73,37A2,2,0,0,1,71,35L71,27A2,2,0,0,1,73,25Z"/>
+    <!-- Top-right finder center dot -->
+    <path
+        android:fillColor="#FFFFFF"
+        android:pathData="M75.5,28L78.5,28A1.5,1.5,0,0,1,80,29.5L80,32.5A1.5,1.5,0,0,1,78.5,34L75.5,34A1.5,1.5,0,0,1,74,32.5L74,29.5A1.5,1.5,0,0,1,75.5,28Z"/>
+
+    <!-- Bottom-left finder pattern frame -->
+    <path
+        android:fillColor="#FFFFFF"
+        android:fillType="evenOdd"
+        android:pathData="M24,66L38,66A4,4,0,0,1,42,70L42,84A4,4,0,0,1,38,88L24,88A4,4,0,0,1,20,84L20,70A4,4,0,0,1,24,66Z M27,71L35,71A2,2,0,0,1,37,73L37,81A2,2,0,0,1,35,83L27,83A2,2,0,0,1,25,81L25,73A2,2,0,0,1,27,71Z"/>
+    <!-- Bottom-left finder center dot -->
+    <path
+        android:fillColor="#FFFFFF"
+        android:pathData="M29.5,74L32.5,74A1.5,1.5,0,0,1,34,75.5L34,78.5A1.5,1.5,0,0,1,32.5,80L29.5,80A1.5,1.5,0,0,1,28,78.5L28,75.5A1.5,1.5,0,0,1,29.5,74Z"/>
+
+    <!-- QR data modules (scattered dots between finder patterns) -->
+    <path
+        android:fillColor="#FFFFFF"
+        android:pathData="M46,31A3,3,0,0,1,52,31A3,3,0,0,1,46,31Z M54,31A3,3,0,0,1,60,31A3,3,0,0,1,54,31Z M28,49A3,3,0,0,1,34,49A3,3,0,0,1,28,49Z M28,57A3,3,0,0,1,34,57A3,3,0,0,1,28,57Z M46,49A3,3,0,0,1,52,49A3,3,0,0,1,46,49Z M54,49A3,3,0,0,1,60,49A3,3,0,0,1,54,49Z M46,57A3,3,0,0,1,52,57A3,3,0,0,1,46,57Z M54,57A3,3,0,0,1,60,57A3,3,0,0,1,54,57Z M64,49A3,3,0,0,1,70,49A3,3,0,0,1,64,49Z M46,67A3,3,0,0,1,52,67A3,3,0,0,1,46,67Z M64,67A3,3,0,0,1,70,67A3,3,0,0,1,64,67Z M72,75A3,3,0,0,1,78,75A3,3,0,0,1,72,75Z M72,57A3,3,0,0,1,78,57A3,3,0,0,1,72,57Z M54,75A3,3,0,0,1,60,75A3,3,0,0,1,54,75Z"/>
+
+</vector>
