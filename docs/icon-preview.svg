@@ -1,0 +1,27 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="108" height="108" viewBox="0 0 108 108">
+  <rect width="108" height="108" rx="24" fill="#1A237E"/>
+  <!-- Top-left finder -->
+  <path fill="#fff" fill-rule="evenodd" d="M24,20H38a4,4,0,0,1,4,4V38a4,4,0,0,1-4,4H24a4,4,0,0,1-4-4V24A4,4,0,0,1,24,20Zm3,5H35a2,2,0,0,1,2,2V35a2,2,0,0,1-2,2H27a2,2,0,0,1-2-2V27A2,2,0,0,1,27,25Z"/>
+  <rect x="28" y="28" width="6" height="6" rx="1.5" fill="#fff"/>
+  <!-- Top-right finder -->
+  <path fill="#fff" fill-rule="evenodd" d="M70,20H84a4,4,0,0,1,4,4V38a4,4,0,0,1-4,4H70a4,4,0,0,1-4-4V24A4,4,0,0,1,70,20Zm3,5H81a2,2,0,0,1,2,2V35a2,2,0,0,1-2,2H73a2,2,0,0,1-2-2V27A2,2,0,0,1,73,25Z"/>
+  <rect x="74" y="28" width="6" height="6" rx="1.5" fill="#fff"/>
+  <!-- Bottom-left finder -->
+  <path fill="#fff" fill-rule="evenodd" d="M24,66H38a4,4,0,0,1,4,4V84a4,4,0,0,1-4,4H24a4,4,0,0,1-4-4V70A4,4,0,0,1,24,66Zm3,5H35a2,2,0,0,1,2,2V81a2,2,0,0,1-2,2H27a2,2,0,0,1-2-2V73A2,2,0,0,1,27,71Z"/>
+  <rect x="28" y="74" width="6" height="6" rx="1.5" fill="#fff"/>
+  <!-- Data dots -->
+  <circle cx="49" cy="31" r="3" fill="#fff"/>
+  <circle cx="57" cy="31" r="3" fill="#fff"/>
+  <circle cx="31" cy="49" r="3" fill="#fff"/>
+  <circle cx="31" cy="57" r="3" fill="#fff"/>
+  <circle cx="49" cy="49" r="3" fill="#fff"/>
+  <circle cx="57" cy="49" r="3" fill="#fff"/>
+  <circle cx="49" cy="57" r="3" fill="#fff"/>
+  <circle cx="57" cy="57" r="3" fill="#fff"/>
+  <circle cx="67" cy="49" r="3" fill="#fff"/>
+  <circle cx="49" cy="67" r="3" fill="#fff"/>
+  <circle cx="67" cy="67" r="3" fill="#fff"/>
+  <circle cx="75" cy="75" r="3" fill="#fff"/>
+  <circle cx="75" cy="57" r="3" fill="#fff"/>
+  <circle cx="57" cy="75" r="3" fill="#fff"/>
+</svg>
